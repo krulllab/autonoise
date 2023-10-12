@@ -17,12 +17,19 @@ We showcase the capability of our approach on various simulated datasets and on 
 
 ### Information
 
-Code for the **[publication]ADD_LINK** **Towards Structured Noise Models for Unsupervised Denoising**. 
+Code for the publication [Towards Structured Noise Models for Unsupervised Denoising](https://link.springer.com/chapter/10.1007/978-3-031-25069-9_25). 
 
-### Citation
+### BibTeX
 
 ```
-ADD_CITATION
+@inproceedings{salmon2022towards,
+  title={Towards Structured Noise Models for Unsupervised Denoising},
+  author={Salmon, Benjamin and Krull, Alexander},
+  booktitle={European Conference on Computer Vision},
+  pages={379--394},
+  year={2022},
+  organization={Springer}
+}
 ```
 
 ### Dependencies 
