@@ -4,6 +4,9 @@ from torch import nn
 import torch.functional as F
 from torchvision.utils import save_image
 import os
+import io
+import matplotlib.pyplot as plt
+from torchvision import transforms
 
 class Interpolate(nn.Module):
     """Wrapper for torch.nn.functional.interpolate."""
@@ -279,3 +282,17 @@ def plotProbabilityDistribution(signalBinIndex, histogram, gaussianMixtureNoiseM
     plt.ylabel('Probability Density')
     plt.title("Probability Distribution P(x|s) at signal =" + str(querySignal_numpy))
     plt.legend()
+
+def plot_to_image(figure):
+    """Converts the matplotlib plot specified by 'figure' to a PNG image and
+    returns it. The supplied figure is closed and inaccessible after this call."""
+    # Save the plot to a PNG in memory.
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    # Closing the figure prevents it from being displayed directly inside
+    # the notebook.
+    plt.close(figure)
+    buf.seek(0)
+    # Convert PNG buffer to PyTorch tensor
+    image = transforms.ToTensor()(plt.imread(buf))
+    return image

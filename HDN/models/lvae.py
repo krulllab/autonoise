@@ -2,9 +2,10 @@ import numpy as np
 import torch
 from torch import nn
 from torch import optim
+import matplotlib.pyplot as plt
 
 from HDN.lib.likelihoods import (GaussianLikelihood, NoiseModelLikelihood)
-from HDN.lib.utils import (crop_img_tensor, pad_img_tensor, Interpolate, free_bits_kl, save_images)
+from HDN.lib.utils import (crop_img_tensor, pad_img_tensor, Interpolate, free_bits_kl, plot_to_image)
 from HDN.models.lvae_layers import (TopDownLayer, BottomUpLayer,
                           TopDownDeterministicResBlock,
                           BottomUpDeterministicResBlock)
@@ -400,7 +401,9 @@ class LadderVAE(LightningModule):
         kl_loss = model_out['kl_loss']/float(x.shape[2]*x.shape[3])
         elbo = recons_loss + kl_loss
         
-        self.log('train_elbo', elbo)
+        self.log('train/elbo', elbo)
+        self.log('train/reconstruction_loss', recons_loss)
+        self.log('train/kl_loss', kl_loss)
         return elbo
     
     def log_images_for_tensorboard(self, pred, x, img_mmse):
@@ -409,11 +412,23 @@ class LadderVAE(LightningModule):
         clamped_mmse = torch.clamp((img_mmse - img_mmse.min()) / (img_mmse.max() - img_mmse.min()), 0, 1)
         self.trainer.logger.experiment.add_image('inputs/img', clamped_input[0],
                                                      self.current_epoch)
-        for i in range(7):
+        for i in range(len(pred)):
             self.trainer.logger.experiment.add_image('predcitions/sample_{}'.format(i), clamped_pred[i],
                                                      self.current_epoch)
-        self.trainer.logger.experiment.add_image('predcitions/mmse (100 samples)', clamped_mmse[0],
+        self.trainer.logger.experiment.add_image(f'predcitions/mmse ({len(pred)} samples)', clamped_mmse[0],
                                                      self.current_epoch)
+        
+    def log_plots_for_tensorboard(self, pred, x, mmse):
+        figure = plt.figure()
+        plt.plot(x[0, 0, 0].cpu(), color="blue", label="Attenuated")
+        plt.plot(mmse[0, 0, 0].cpu(), color="orange", label="Denoised")
+        for i in range(len(pred)):
+            plt.plot(pred[i, 0, 0].cpu(), color="orange", alpha=0.2)
+        plt.legend()
+
+        self.trainer.logger.experiment.add_image("Validation_plot",
+                                                 plot_to_image(figure),
+                                                 self.current_epoch)
     
     def validation_step(self, batch, batch_idx):
         x = (batch - self.data_mean) / self.data_std
@@ -427,13 +442,21 @@ class LadderVAE(LightningModule):
         kl_loss = model_out['kl_loss']/float(x.shape[2]*x.shape[3])
         elbo = recons_loss + kl_loss
         
-        self.log('val_elbo', elbo, prog_bar=True)
+        self.log('val/elbo', elbo)
+        self.log('val/reconstruction_loss', recons_loss)
+        self.log('val/kl_loss', kl_loss)
         
-        if x.shape[-2] >= 2:
-            if batch_idx == 0:
-                all_samples = self.forward(torch.repeat_interleave(x[0:1], 100, 0))['out_mean']
-                mmse = torch.mean(all_samples, 0, keepdim=True)
-                self.log_images_for_tensorboard(all_samples, x[0:1], mmse)
+        if batch_idx == 0:
+            if x.shape[-2] >= 2:
+                    idx = np.random.randint(len(x))
+                    all_samples = self.forward(torch.repeat_interleave(x[idx:idx+1], x.shape[0], 0))['out_mean']
+                    mmse = torch.mean(all_samples, 0, keepdim=True)
+                    self.log_images_for_tensorboard(all_samples, x[idx:idx+1], mmse)
+            else:
+                idx = np.random.randint(len(x))
+                all_samples = self.forward(torch.repeat_interleave(x[idx:idx + 1], x.shape[0], 0))['out_mean']
+                mmse = torch.mean(all_samples, dim=0, keepdim=True)
+                self.log_plots_for_tensorboard(all_samples, x[idx:idx + 1], mmse)
         
         return elbo
             
@@ -449,7 +472,7 @@ class LadderVAE(LightningModule):
                                                          factor=0.5,
                                                          min_lr=1e-12,
                                                          verbose=True)
-        monitor = 'val_elbo'
+        monitor = 'val/elbo'
         
         return{'optimizer':optimizer,
                'lr_scheduler':scheduler,

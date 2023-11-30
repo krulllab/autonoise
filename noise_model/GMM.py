@@ -23,11 +23,12 @@ class GMM(pl.LightningModule):
 
     """
     
-    def __init__(self, n_gaussians, noise_mean, noise_std):
+    def __init__(self, n_gaussians, noise_mean, noise_std, lr):
         super().__init__()  
         self.n_gaussians = n_gaussians
         self.noise_mean = noise_mean
         self.noise_std = noise_std
+        self.lr = lr
         
     def get_gaussian_params(self, pred):
         blockSize = self.n_gaussians
@@ -138,14 +139,14 @@ class GMM(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         loss = -torch.mean(self.loglikelihood(batch))
-        self.log("train_nll", loss)
+        self.log("train/nll", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss = -torch.mean(self.loglikelihood(batch))
-        self.log("val_nll", loss, prog_bar=True)
+        self.log("val/nll", loss, prog_bar=True)
         
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-4)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         scheduler = optim.lr_scheduler.StepLR(optimizer, 1, gamma=0.99)
         return [optimizer], [scheduler]
