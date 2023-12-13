@@ -5,7 +5,7 @@ Benjamin Salmon<sup>1</sup> and Alexander Krull<sup>2</sup></br>
 <sup>1</sup>brs209@student.bham.ac.uk<br>
 <sup>2</sup>a.f.f.krull@bham.ac.uk <br>
 
-![teaserFigure](resources/Teaser.png)
+![teaserFigure](resources/teaser.png)
 
 The introduction of unsupervised methods in denoising has shown that unpaired noisy data can be used to train denoising networks, which can not only produce high quality results but also enable us to sample multiple possible diverse denoising solutions. 
 However, these systems rely on a probabilistic description of the imaging noise--a noise model.
