@@ -17,7 +17,6 @@ ipython_config.py
 
 *.tiff
 *.tif
-*.png
 *.jpg
 *.jpeg
 *.ckpt
